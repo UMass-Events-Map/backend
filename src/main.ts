@@ -23,8 +23,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Destiny Backend')
-    .setDescription('Destiny Backend Documentation')
+    .setTitle('Umaps Backend')
+    .setDescription('Umaps Backend Documentation')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
