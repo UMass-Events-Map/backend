@@ -52,4 +52,21 @@ export class EventsService {
       relations: ['building', 'organization', 'event_logs'],
     });
   }
+
+  async findAllIds(
+    limit: number,
+    offset: number,
+  ): Promise<{ ids: string[]; total: number }> {
+    const [events, total] = await this.eventsRepository.findAndCount({
+      select: ['id'],
+      skip: offset,
+      take: limit,
+      order: { created_at: 'DESC' },
+    });
+
+    return {
+      ids: events.map((event) => event.id),
+      total,
+    };
+  }
 }
