@@ -41,4 +41,21 @@ export class BuildingsService {
   async remove(id: string): Promise<void> {
     await this.buildingsRepository.delete(id);
   }
+
+  async findAllPaginated(
+    limit: number,
+    offset: number,
+  ): Promise<{ buildings: Building[]; total: number }> {
+    const [buildings, total] = await this.buildingsRepository.findAndCount({
+      relations: ['events'],
+      skip: offset,
+      take: limit,
+      order: { created_at: 'DESC' },
+    });
+
+    return {
+      buildings,
+      total,
+    };
+  }
 }

@@ -13,5 +13,6 @@ import { EventLog } from '../event-logs/entities/event-log.entity';
   ],
   controllers: [EventsController],
   providers: [EventsService],
+  exports: [EventsService],
 })
 export class EventsModule {}
