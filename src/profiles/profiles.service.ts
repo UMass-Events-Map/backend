@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Repository } from 'typeorm';
 import { Profile } from './entities/profile.entity';
-import { CreateProfileDto } from './dto/create-profile.dto';
+import { CreateNameDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ProfilesService {
@@ -12,9 +13,43 @@ export class ProfilesService {
     private profilesRepository: Repository<Profile>,
   ) {}
 
-  create(createProfileDto: CreateProfileDto): Promise<Profile> {
-    const profile = this.profilesRepository.create(createProfileDto);
-    return this.profilesRepository.save(profile);
+  private getSupabaseClient(jwt: string): SupabaseClient {
+    return createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+        global: {
+          headers: {
+            Authorization: jwt,
+          },
+        },
+      },
+    );
+  }
+
+  async create(createProfileDto: CreateNameDto, jwt: string): Promise<void> {
+    const supabase = this.getSupabaseClient(jwt);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    const profile = this.profilesRepository.create({
+      id: user.id,
+      first_name: createProfileDto.first_name,
+      last_name: createProfileDto.last_name,
+    });
+
+    await this.profilesRepository.save(profile);
   }
 
   findAll(): Promise<Profile[]> {
@@ -26,13 +61,6 @@ export class ProfilesService {
   findOne(id: string): Promise<Profile> {
     return this.profilesRepository.findOne({
       where: { id },
-      relations: ['user', 'organizations'],
-    });
-  }
-
-  findByEmail(email: string): Promise<Profile> {
-    return this.profilesRepository.findOne({
-      where: { email },
       relations: ['user', 'organizations'],
     });
   }
@@ -49,13 +77,10 @@ export class ProfilesService {
     await this.profilesRepository.delete(id);
   }
 
-  async verify(id: string): Promise<Profile> {
-    await this.profilesRepository.update(id, { verified: true });
-    return this.findOne(id);
-  }
-
-  async unverify(id: string): Promise<Profile> {
-    await this.profilesRepository.update(id, { verified: false });
-    return this.findOne(id);
+  async exists(id: string): Promise<boolean> {
+    const count = await this.profilesRepository.count({
+      where: { id },
+    });
+    return count > 0;
   }
 }

@@ -9,7 +9,6 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { EventLogsModule } from './event-logs/event-logs.module';
 import { BuildingsModule } from './buildings/buildings.module';
-import { UsersModule } from './users/users.module';
 import { ProfilesOrganizationsModule } from './profiles-organizations/profiles-organizations.module';
 
 @Module({
@@ -32,7 +31,6 @@ import { ProfilesOrganizationsModule } from './profiles-organizations/profiles-o
         },
       },
     }),
-    UsersModule,
     EventsModule,
     ProfilesModule,
     OrganizationsModule,
