@@ -1,12 +1,40 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Event } from '../entities/event.entity';
 
 export class ErrorResponse {
   @ApiProperty({ example: 'Error message' })
   error: string;
 }
 
-export class EventResponse implements Event {
+export class BuildingData {
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  id: string;
+
+  @ApiProperty({ example: 'Engineering Building' })
+  name: string;
+
+  @ApiProperty({ example: 'https://example.com/thumbnail.jpg', nullable: true })
+  thumbnail: string;
+
+  @ApiProperty({
+    example: '123 Main Street, City, State 12345',
+    nullable: true,
+  })
+  address: string;
+
+  @ApiProperty({ example: 42.3601 })
+  latitude: number;
+
+  @ApiProperty({ example: -71.0589 })
+  longitude: number;
+
+  @ApiProperty()
+  created_at: Date;
+
+  @ApiProperty()
+  updated_at: Date;
+}
+
+export class EventData {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
 
@@ -21,12 +49,6 @@ export class EventResponse implements Event {
 
   @ApiProperty({ example: '09:00:00' })
   time: string;
-
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    nullable: true,
-  })
-  building_id: string;
 
   @ApiProperty({ example: '101A', nullable: true })
   room_number: string;
@@ -49,12 +71,14 @@ export class EventResponse implements Event {
   @ApiProperty()
   updated_at: Date;
 
-  @ApiProperty()
-  building: any;
+  @ApiProperty({ type: () => BuildingData, nullable: true })
+  building: BuildingData | null;
+}
 
-  @ApiProperty()
-  organization: any;
+export class EventsResponse {
+  @ApiProperty({ type: [EventData] })
+  data: EventData[];
 
-  @ApiProperty()
-  event_logs: any[];
+  @ApiProperty({ example: 42 })
+  total: number;
 }

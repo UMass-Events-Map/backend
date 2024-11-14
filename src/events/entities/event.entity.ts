@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Building } from '../../buildings/entities/building.entity';
@@ -113,6 +114,7 @@ export class Event {
     nullable: true,
   })
   @ManyToOne(() => Building, (building) => building.events, { nullable: true })
+  @JoinColumn({ name: 'building_id' })
   building: Building;
 
   @ApiProperty({
@@ -123,6 +125,7 @@ export class Event {
   @ManyToOne(() => Organization, (organization) => organization.events, {
     nullable: true,
   })
+  @JoinColumn({ name: 'organization_id' })
   organization: Organization;
 
   @ApiProperty({

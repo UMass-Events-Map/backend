@@ -42,17 +42,93 @@ export class EventLogsService {
     await this.eventLogsRepository.delete(id);
   }
 
-  findByProfileId(profileId: string): Promise<EventLog[]> {
-    return this.eventLogsRepository.find({
+  async findByProfileId(
+    profileId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{ data: EventLog[]; total: number }> {
+    const [eventLogs, total] = await this.eventLogsRepository.findAndCount({
       where: { profile_id: profileId },
       relations: ['profile', 'event'],
+      skip: offset,
+      take: limit,
     });
+
+    const cleanedLogs = eventLogs.map((eventLog) => {
+      const obj = {
+        ...eventLog,
+        profile: eventLog['__profile__'],
+        event: eventLog['__event__'],
+      };
+      delete obj['__profile__'];
+      delete obj['__event__'];
+      return obj;
+    });
+
+    return {
+      data: cleanedLogs,
+      total,
+    };
   }
 
-  findByEventId(eventId: string): Promise<EventLog[]> {
-    return this.eventLogsRepository.find({
+  async findByEventId(
+    eventId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{ data: EventLog[]; total: number }> {
+    const [eventLogs, total] = await this.eventLogsRepository.findAndCount({
       where: { event_id: eventId },
       relations: ['profile', 'event'],
+      skip: offset,
+      take: limit,
     });
+
+    const cleanedLogs = eventLogs.map((eventLog) => {
+      const obj = {
+        ...eventLog,
+        profile: eventLog['__profile__'],
+        event: eventLog['__event__'],
+      };
+      delete obj['__profile__'];
+      delete obj['__event__'];
+      return obj;
+    });
+
+    return {
+      data: cleanedLogs,
+      total,
+    };
+  }
+
+  async findByOrganizationId(
+    organizationId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{ data: EventLog[]; total: number }> {
+    const [eventLogs, total] = await this.eventLogsRepository
+      .createQueryBuilder('event_log')
+      .innerJoin('events', 'org_event', 'event_log.event_id = org_event.id')
+      .where('org_event.organization_id = :organizationId', { organizationId })
+      .leftJoinAndSelect('event_log.profile', 'profile')
+      .leftJoinAndSelect('event_log.event', 'event')
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount();
+
+    const cleanedLogs = eventLogs.map((eventLog) => {
+      const obj = {
+        ...eventLog,
+        profile: eventLog['__profile__'],
+        event: eventLog['__event__'],
+      };
+      delete obj['__profile__'];
+      delete obj['__event__'];
+      return obj;
+    });
+
+    return {
+      data: cleanedLogs,
+      total,
+    };
   }
 }

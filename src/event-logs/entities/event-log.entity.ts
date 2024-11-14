@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Profile } from '../../profiles/entities/profile.entity';
 import { Event } from '../../events/entities/event.entity';
@@ -61,6 +62,7 @@ export class EventLog {
     nullable: true,
     lazy: true,
   })
+  @JoinColumn({ name: 'profile_id' })
   profile: Promise<Profile>;
 
   @ApiProperty({
@@ -72,5 +74,6 @@ export class EventLog {
     nullable: true,
     lazy: true,
   })
+  @JoinColumn({ name: 'event_id' })
   event: Promise<Event>;
 }

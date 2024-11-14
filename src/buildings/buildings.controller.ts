@@ -5,6 +5,9 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Param,
+  Post,
+  Body,
+  Delete,
 } from '@nestjs/common';
 import { BuildingsService } from './buildings.service';
 import { EventsService } from '../events/events.service';
@@ -15,9 +18,13 @@ import {
   ApiResponse,
   ApiBadRequestResponse,
   ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
-import { EventResponse } from '../events/types/event.types';
+import { EventsResponse } from '../events/types/event.types';
 import { ErrorResponse } from './types/building.types';
+import { BuildingsResponseDto } from './dto/building-response.dto';
+import { CreateBuildingDto } from './dto/create-building.dto';
+import { Building } from './entities/building.entity';
 
 @ApiTags('Buildings')
 @Controller('buildings')
@@ -44,43 +51,18 @@ export class BuildingsController {
   @ApiResponse({
     status: 200,
     description: 'Returns list of buildings and total count',
-    schema: {
-      type: 'object',
-      properties: {
-        buildings: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', format: 'uuid' },
-              name: { type: 'string' },
-              latitude: { type: 'number' },
-              longitude: { type: 'number' },
-              created_at: { type: 'string', format: 'date-time' },
-              updated_at: { type: 'string', format: 'date-time' },
-              events: { type: 'array', items: { type: 'object' } },
-            },
-          },
-        },
-        total: { type: 'number' },
-      },
-    },
+    type: BuildingsResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Error fetching buildings',
-    schema: {
-      type: 'object',
-      properties: {
-        error: { type: 'string' },
-      },
-    },
+    type: ErrorResponse,
   })
   async findAll(
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
   ) {
     try {
-      return await this.buildingsService.findAllPaginated(limit, offset);
+      return await this.buildingsService.findAll(limit, offset);
     } catch (error) {
       return {
         error: error.message || 'An error occurred while fetching buildings',
@@ -99,7 +81,7 @@ export class BuildingsController {
   @ApiResponse({
     status: 200,
     description: 'Returns list of events for the building',
-    type: [EventResponse],
+    type: [EventsResponse],
   })
   @ApiBadRequestResponse({
     description: 'Error fetching building events',
@@ -113,6 +95,80 @@ export class BuildingsController {
       return {
         error:
           error.message || 'An error occurred while fetching building events',
+      };
+    }
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new building' })
+  @ApiBody({ type: CreateBuildingDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Building successfully created',
+    type: Building,
+  })
+  @ApiBadRequestResponse({
+    description: 'Error creating building',
+    type: ErrorResponse,
+  })
+  async create(@Body() createBuildingDto: CreateBuildingDto) {
+    try {
+      const building = await this.buildingsService.create(createBuildingDto);
+      return building;
+    } catch (error) {
+      return {
+        error: error.message || 'An error occurred while creating the building',
+      };
+    }
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete a building and all associated events and logs',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'UUID of the building to delete',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Building and associated data successfully deleted',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Building and associated data successfully deleted',
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Error deleting building',
+    type: ErrorResponse,
+  })
+  async remove(@Param('id') id: string) {
+    try {
+      // Check if building exists
+      const building = await this.buildingsService.findOne(id);
+      if (!building) {
+        return {
+          error: 'Building not found',
+        };
+      }
+
+      await this.buildingsService.remove(id);
+
+      return {
+        success: true,
+        message: 'Building and associated data successfully deleted',
+      };
+    } catch (error) {
+      return {
+        error: error.message || 'An error occurred while deleting the building',
       };
     }
   }

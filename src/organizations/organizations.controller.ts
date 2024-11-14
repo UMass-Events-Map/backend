@@ -24,6 +24,8 @@ import {
 } from '@nestjs/swagger';
 import { OrganizationResponseDto } from './dto/organization-response.dto';
 import { OrganizationDetailsResponseDto } from './dto/organization-member.dto';
+import { EventLogsService } from '../event-logs/event-logs.service';
+import { EventLog } from '../event-logs/entities/event-log.entity';
 
 @ApiTags('Organizations')
 @Controller('organizations')
@@ -31,6 +33,7 @@ export class OrganizationsController {
   constructor(
     private readonly organizationsService: OrganizationsService,
     private readonly profOrgService: ProfilesOrganizationsService,
+    private readonly eventLogsService: EventLogsService,
   ) {}
 
   @Post()
@@ -203,6 +206,75 @@ export class OrganizationsController {
         error:
           error.message ||
           'An error occurred while fetching organization details',
+      };
+    }
+  }
+
+  @Get(':id/logs')
+  @ApiOperation({
+    summary: 'Get event logs for an organization',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Organization ID',
+    required: true,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of records to return',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of records to skip',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns event logs for the organization with pagination',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { type: 'object', ref: EventLog },
+        },
+        total: {
+          type: 'number',
+          description: 'Total number of records',
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Error fetching event logs',
+    schema: {
+      type: 'object',
+      properties: {
+        error: {
+          type: 'string',
+          example: 'Error fetching event logs for organization',
+        },
+      },
+    },
+  })
+  async getOrganizationEventLogs(
+    @Param('id') id: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ) {
+    try {
+      return await this.eventLogsService.findByOrganizationId(
+        id,
+        limit,
+        offset,
+      );
+    } catch (error) {
+      return {
+        error: error.message || 'An error occurred while fetching event logs',
       };
     }
   }

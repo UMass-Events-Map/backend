@@ -1,26 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Building } from './entities/building.entity';
 import { CreateBuildingDto } from './dto/create-building.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
+import { BuildingsResponseDto } from './dto/building-response.dto';
+import { Event } from '../events/entities/event.entity';
+import { EventLog } from '../event-logs/entities/event-log.entity';
 
 @Injectable()
 export class BuildingsService {
   constructor(
+    private dataSource: DataSource,
     @InjectRepository(Building)
     private buildingsRepository: Repository<Building>,
+    @InjectRepository(Event)
+    private eventsRepository: Repository<Event>,
+    @InjectRepository(EventLog)
+    private eventLogsRepository: Repository<EventLog>,
   ) {}
 
   create(createBuildingDto: CreateBuildingDto): Promise<Building> {
     const building = this.buildingsRepository.create(createBuildingDto);
     return this.buildingsRepository.save(building);
-  }
-
-  findAll(): Promise<Building[]> {
-    return this.buildingsRepository.find({
-      relations: ['events'],
-    });
   }
 
   findOne(id: string): Promise<Building> {
@@ -39,22 +41,45 @@ export class BuildingsService {
   }
 
   async remove(id: string): Promise<void> {
-    await this.buildingsRepository.delete(id);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Get all events associated with this building
+      const events = await this.eventsRepository.find({
+        where: { building_id: id },
+      });
+
+      // Delete all event logs for these events
+      for (const event of events) {
+        await queryRunner.manager.delete(EventLog, { event_id: event.id });
+      }
+
+      // Delete all events associated with this building
+      await queryRunner.manager.delete(Event, { building_id: id });
+
+      // Finally, delete the building
+      await queryRunner.manager.delete(Building, { id });
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
-  async findAllPaginated(
-    limit: number,
-    offset: number,
-  ): Promise<{ buildings: Building[]; total: number }> {
+  async findAll(limit: number, offset: number): Promise<BuildingsResponseDto> {
     const [buildings, total] = await this.buildingsRepository.findAndCount({
-      relations: ['events'],
       skip: offset,
       take: limit,
       order: { created_at: 'DESC' },
     });
 
     return {
-      buildings,
+      data: buildings,
       total,
     };
   }

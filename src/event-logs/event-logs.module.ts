@@ -10,5 +10,6 @@ import { Event } from '../events/entities/event.entity';
   imports: [TypeOrmModule.forFeature([EventLog, Profile, Event])],
   controllers: [EventLogsController],
   providers: [EventLogsService],
+  exports: [EventLogsService],
 })
 export class EventLogsModule {}

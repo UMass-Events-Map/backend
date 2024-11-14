@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ProfilesOrganizations } from './entities/profiles-organizations.entity';
 import { ProfilesService } from '../profiles/profiles.service';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class ProfilesOrganizationsService {
@@ -15,7 +20,7 @@ export class ProfilesOrganizationsService {
   async addProfileToOrganization(
     profileId: string,
     organizationId: string,
-    role: string = 'member',
+    role = 'member',
   ): Promise<ProfilesOrganizations> {
     const profOrg = this.profOrgRepository.create({
       profile_id: profileId,
@@ -51,6 +56,8 @@ export class ProfilesOrganizationsService {
     profileId: string,
     organizationId: string,
   ): Promise<void> {
+    console.log(profileId, organizationId);
+    console.log('removing');
     const result = await this.profOrgRepository.delete({
       profile_id: profileId,
       organization_id: organizationId,
@@ -91,6 +98,29 @@ export class ProfilesOrganizationsService {
           profile_id: profileId,
           organization_id: organizationId,
           role: 'admin',
+        },
+      });
+
+      return !!profOrg;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async verifyMembershipRole(
+    auth: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    try {
+      // Get the profile ID from the auth token
+      const profileId = await this.profilesService.getProfileIdFromToken(auth);
+
+      // Find the profile-organization relationship
+      const profOrg = await this.profOrgRepository.findOne({
+        where: {
+          profile_id: profileId,
+          organization_id: organizationId,
+          role: In(['member', 'admin']),
         },
       });
 
