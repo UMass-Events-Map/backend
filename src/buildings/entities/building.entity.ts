@@ -49,7 +49,15 @@ export class Building {
     example: 42.3601,
     type: 'number',
   })
-  @Column({ type: 'decimal', precision: 9, scale: 6 })
+  @Column({
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
   latitude: number;
 
   @ApiProperty({
@@ -57,7 +65,15 @@ export class Building {
     example: -71.0589,
     type: 'number',
   })
-  @Column({ type: 'decimal', precision: 9, scale: 6 })
+  @Column({
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value),
+    },
+  })
   longitude: number;
 
   @ApiProperty({
