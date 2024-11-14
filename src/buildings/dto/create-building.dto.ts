@@ -1,9 +1,24 @@
-import { IsString, IsNumber, IsNotEmpty, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsNotEmpty,
+  Min,
+  Max,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateBuildingDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsString()
+  @IsOptional()
+  thumbnail?: string;
+
+  @IsString()
+  @IsOptional()
+  address?: string;
 
   @IsNumber()
   @Min(-90)

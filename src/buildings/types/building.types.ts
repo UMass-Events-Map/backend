@@ -13,6 +13,15 @@ export class BuildingResponse implements Building {
   @ApiProperty({ example: 'Engineering Building' })
   name: string;
 
+  @ApiProperty({ example: 'https://example.com/thumbnail.jpg', nullable: true })
+  thumbnail: string;
+
+  @ApiProperty({
+    example: '123 Main Street, City, State 12345',
+    nullable: true,
+  })
+  address: string;
+
   @ApiProperty({ example: 42.3601 })
   latitude: number;
 

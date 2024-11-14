@@ -16,6 +16,12 @@ export class Building {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  thumbnail: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  address: string;
+
   @Column({ type: 'decimal', precision: 9, scale: 6 })
   latitude: number;
 
