@@ -1,10 +1,20 @@
-import { Body, Controller, Headers, Post, Get, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Post,
+  Get,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import {
   ApiBadRequestResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiQuery,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { CreateNameDto } from './dto/create-profile.dto';
 
@@ -71,5 +81,42 @@ export class ProfilesController {
   async checkExists(@Param('id') id: string) {
     const exists = await this.profilesService.exists(id);
     return { exists };
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary: 'Search for profiles by email',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: true,
+    description: 'Email search query',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns matching profiles',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          email: { type: 'string' },
+          first_name: { type: 'string' },
+          last_name: { type: 'string' },
+        },
+      },
+    },
+  })
+  async search(@Query('query') query: string) {
+    try {
+      const profiles = await this.profilesService.search(query);
+      return profiles;
+    } catch (error) {
+      return {
+        error: error.message || 'An error occurred while searching profiles',
+      };
+    }
   }
 }

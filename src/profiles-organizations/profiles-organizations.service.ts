@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProfilesOrganizations } from './entities/profiles-organizations.entity';
+import { ProfilesService } from '../profiles/profiles.service';
 
 @Injectable()
 export class ProfilesOrganizationsService {
   constructor(
     @InjectRepository(ProfilesOrganizations)
     private readonly profOrgRepository: Repository<ProfilesOrganizations>,
+    private readonly profilesService: ProfilesService,
   ) {}
 
   async addProfileToOrganization(
@@ -73,5 +75,44 @@ export class ProfilesOrganizationsService {
       where: { profile_id: profileId, organization_id: organizationId },
       relations: ['profile', 'organization'],
     });
+  }
+
+  async verifyAdminRole(
+    auth: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    try {
+      // Get the profile ID from the auth token
+      const profileId = await this.profilesService.getProfileIdFromToken(auth);
+
+      // Find the profile-organization relationship
+      const profOrg = await this.profOrgRepository.findOne({
+        where: {
+          profile_id: profileId,
+          organization_id: organizationId,
+          role: 'admin',
+        },
+      });
+
+      return !!profOrg;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async getAllMembers(
+    organizationId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{ members: ProfilesOrganizations[]; total: number }> {
+    const [members, total] = await this.profOrgRepository
+      .createQueryBuilder('po')
+      .leftJoinAndSelect('po.profile', 'profile')
+      .where('po.organization_id = :organizationId', { organizationId })
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount();
+
+    return { members, total };
   }
 }

@@ -1,58 +1,48 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsEmail,
-  MinLength,
-  IsNotEmpty,
-  MaxLength,
-  IsOptional,
-  IsUrl,
-} from 'class-validator';
 
-export class CreateOrganizationDto {
+export class OrganizationResponseDto {
+  @ApiProperty({
+    description: 'The unique identifier of the organization',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
   @ApiProperty({
     description: 'The name of the organization',
-    minLength: 2,
-    maxLength: 100,
     example: 'Acme Corporation',
   })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(2)
-  @MaxLength(100)
-  organization_name: string;
+  name: string;
 
   @ApiProperty({
-    description: 'The email address for the organization',
+    description: 'The email address of the organization',
     example: 'contact@acmecorp.com',
   })
-  @IsEmail()
   email: string;
 
   @ApiProperty({
     description: 'A detailed description of the organization',
     example: 'A leading provider of innovative solutions...',
-    required: false,
+    nullable: true,
   })
-  @IsString()
-  @IsOptional()
-  description?: string;
+  description: string | null;
 
   @ApiProperty({
     description: "URL to the organization's image or logo",
     example: 'https://example.com/images/acme-logo.png',
-    required: false,
+    nullable: true,
   })
-  @IsUrl()
-  @IsOptional()
-  image_url?: string;
+  image_url: string | null;
 
   @ApiProperty({
     description: 'Physical address of the organization',
     example: '123 Main St, City, State 12345',
-    required: false,
+    nullable: true,
   })
-  @IsString()
-  @IsOptional()
-  address?: string;
+  address: string | null;
+
+  @ApiProperty({
+    description: 'Whether the organization is verified',
+    example: false,
+  })
+  verified: boolean;
 }

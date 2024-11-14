@@ -47,6 +47,7 @@ export class ProfilesService {
       id: user.id,
       first_name: createProfileDto.first_name,
       last_name: createProfileDto.last_name,
+      email: user.email,
     });
 
     await this.profilesRepository.save(profile);
@@ -82,5 +83,37 @@ export class ProfilesService {
       where: { id },
     });
     return count > 0;
+  }
+
+  async getProfileIdFromToken(jwt: string): Promise<string> {
+    const supabase = this.getSupabaseClient(jwt);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    return user.id;
+  }
+
+  async search(query: string): Promise<Partial<Profile>[]> {
+    const profiles = await this.profilesRepository
+      .createQueryBuilder('profile')
+      .select([
+        'profile.id',
+        'profile.email',
+        'profile.first_name',
+        'profile.last_name',
+      ])
+      .where('LOWER(profile.email) LIKE LOWER(:query)', {
+        query: `%${query}%`,
+      })
+      .getMany();
+
+    return profiles;
   }
 }
