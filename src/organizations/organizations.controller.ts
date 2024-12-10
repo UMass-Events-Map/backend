@@ -240,7 +240,7 @@ export class OrganizationsController {
       properties: {
         data: {
           type: 'array',
-          items: { type: 'object', ref: EventLog },
+          items: { $ref: '#/components/schemas/EventLog' },
         },
         total: {
           type: 'number',

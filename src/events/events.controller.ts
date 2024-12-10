@@ -9,6 +9,8 @@ import {
   Body,
   Headers,
   UnauthorizedException,
+  Delete,
+  Patch,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import {
@@ -26,7 +28,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { ProfilesOrganizationsService } from '../profiles-organizations/profiles-organizations.service';
 import { EventLogsService } from '../event-logs/event-logs.service';
 import { ProfilesService } from '../profiles/profiles.service';
-import { EventLog } from 'src/event-logs/entities/event-log.entity';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @ApiTags('Events')
 @Controller('events')
@@ -252,7 +254,9 @@ export class EventsController {
       properties: {
         data: {
           type: 'array',
-          items: { type: 'object', ref: EventLog },
+          items: {
+            $ref: '#/components/schemas/EventLog',
+          },
         },
         total: {
           type: 'number',
@@ -275,6 +279,184 @@ export class EventsController {
     } catch (error) {
       return {
         error: error.message || 'An error occurred while fetching event logs',
+      };
+    }
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete event by ID' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'UUID of the event to delete',
+    type: String,
+  })
+  @ApiHeader({
+    name: 'authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Event successfully deleted',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Error deleting event',
+    type: ErrorResponse,
+  })
+  async remove(
+    @Param('id') id: string,
+    @Headers('authorization') auth: string,
+  ) {
+    try {
+      const event = await this.eventsService.findOne(id);
+      if (!event) {
+        return {
+          error: 'Event not found',
+        };
+      }
+
+      // Verify user has permission to delete the event
+      const isMember = await this.profOrgService.verifyMembershipRole(
+        auth,
+        event.organization_id,
+      );
+
+      if (!isMember) {
+        throw new UnauthorizedException(
+          'Must be a member or admin of the organization to delete events',
+        );
+      }
+
+      // Get profile ID for logging
+      const profileId = await this.profilesService.getProfileIdFromToken(auth);
+
+      // Delete the event
+      await this.eventsService.remove(id);
+
+      // Log the deletion
+      await this.eventLogsService.create({
+        event_id: id,
+        profile_id: profileId,
+        action: 'event.deleted',
+      });
+
+      return {
+        success: true,
+        message: 'Event successfully deleted',
+      };
+    } catch (error) {
+      return {
+        error: error.message || 'An error occurred while deleting the event',
+      };
+    }
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update event by ID' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'UUID of the event to update',
+    type: String,
+  })
+  @ApiHeader({
+    name: 'authorization',
+    description: 'Bearer token for authentication',
+    required: true,
+  })
+  @ApiBody({
+    type: UpdateEventDto,
+    description: 'Event update data',
+    examples: {
+      basic: {
+        summary: 'Basic Update',
+        description: 'Update basic event details',
+        value: {
+          name: 'Updated Tech Conference 2024',
+          description: 'Updated conference description',
+          date: '2024-07-15',
+          time: '15:30',
+        },
+      },
+      full: {
+        summary: 'Full Update',
+        description: 'Update all available event fields',
+        value: {
+          name: 'Updated Tech Conference 2024',
+          description: 'Updated conference description',
+          date: '2024-07-15',
+          time: '15:30',
+          building_id: '123e4567-e89b-12d3-a456-426614174000',
+          room_number: '202B',
+          thumbnail: 'https://example.com/updated-thumbnail.jpg',
+          attendance: 150,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Event successfully updated',
+    type: EventsResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Error updating event',
+    type: ErrorResponse,
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateEventDto: UpdateEventDto,
+    @Headers('authorization') auth: string,
+  ) {
+    try {
+      const event = await this.eventsService.findOne(id);
+      if (!event) {
+        return {
+          error: 'Event not found',
+        };
+      }
+
+      // Verify user has permission to update the event
+      const isMember = await this.profOrgService.verifyMembershipRole(
+        auth,
+        event.organization_id,
+      );
+
+      if (!isMember) {
+        throw new UnauthorizedException(
+          'Must be a member or admin of the organization to update events',
+        );
+      }
+
+      // Get profile ID for logging
+      const profileId = await this.profilesService.getProfileIdFromToken(auth);
+
+      // Update the event
+      const updatedEvent = await this.eventsService.update(id, updateEventDto);
+
+      // Log the update
+      await this.eventLogsService.create({
+        event_id: id,
+        profile_id: profileId,
+        action: 'event.updated',
+      });
+
+      return {
+        success: true,
+        message: 'Event successfully updated',
+        data: updatedEvent,
+      };
+    } catch (error) {
+      return {
+        error: error.message || 'An error occurred while updating the event',
       };
     }
   }
