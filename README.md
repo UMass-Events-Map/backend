@@ -10,6 +10,29 @@ Ensure you have a `.env` file in the root of the project with the correct databa
 
 Ensure that syncing is set to true in the env file.
 
+# Testing
+
+## End-to-End Tests
+
+The project includes comprehensive end-to-end tests for each major module. You can run tests using the following commands:
+
+```bash
+# Run all e2e tests
+npm run test:e2e:all
+
+# Run individual module tests
+npm run test:events         # Test event endpoints
+npm run test:buildings      # Test building endpoints
+npm run test:profiles       # Test profile endpoints
+npm run test:organizations  # Test organization endpoints
+```
+
+Each test suite verifies the functionality of its respective endpoints, including:
+- Response structure
+- Data validation
+- Error handling
+- Relationships between entities
+
 # Database Access
 
 ## Location Information
