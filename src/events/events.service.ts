@@ -5,12 +5,15 @@ import { Event } from './entities/event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsResponse } from './types/event.types';
+import { EventLog } from '../event-logs/entities/event-log.entity';
 
 @Injectable()
 export class EventsService {
   constructor(
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
+    @InjectRepository(EventLog)
+    private eventLogsRepository: Repository<EventLog>,
   ) {}
 
   create(createEventDto: CreateEventDto): Promise<Event> {
@@ -37,6 +40,7 @@ export class EventsService {
   }
 
   async remove(id: string): Promise<void> {
+    await this.eventLogsRepository.delete({ event_id: id });
     await this.eventsRepository.delete(id);
   }
 

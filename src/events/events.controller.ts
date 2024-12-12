@@ -338,15 +338,15 @@ export class EventsController {
       // Get profile ID for logging
       const profileId = await this.profilesService.getProfileIdFromToken(auth);
 
-      // Delete the event
-      await this.eventsService.remove(id);
-
-      // Log the deletion
+      // Create the deletion log BEFORE deleting the event
       await this.eventLogsService.create({
         event_id: id,
         profile_id: profileId,
         action: 'event.deleted',
       });
+
+      // Delete the event
+      await this.eventsService.remove(id);
 
       return {
         success: true,

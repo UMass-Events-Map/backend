@@ -113,6 +113,7 @@ export class ProfilesOrganizationsService {
   ): Promise<boolean> {
     try {
       // Get the profile ID from the auth token
+
       const profileId = await this.profilesService.getProfileIdFromToken(auth);
 
       // Find the profile-organization relationship
@@ -126,6 +127,7 @@ export class ProfilesOrganizationsService {
 
       return !!profOrg;
     } catch (error) {
+      console.log(`error: ${error}`);
       return false;
     }
   }
